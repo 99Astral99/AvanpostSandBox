@@ -2,6 +2,7 @@
 using Avanpost.Interviews.Task.Integration.Data.Models.Models;
 using Avanpost.Interviews.Task.Integration.SandBox.Connector.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
 {
@@ -24,7 +25,10 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
             using var context = new ConnectorDb();
 
             if (IsUserExists(user.Login))
+            {
+                Logger.Error("User already exists");
                 throw new ArgumentException("User already exists");
+            }
 
             var newUser = new User()
             {
@@ -33,6 +37,8 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
 
             context.Users.Add(newUser);
             context.SaveChanges();
+
+            Logger.Debug($"User with login {newUser.Login} has been created");
         }
 
         public IEnumerable<Property> GetAllProperties()
@@ -56,6 +62,7 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
                     .AsNoTracking()
                     .ToList();
 
+            Logger.Debug($"GetAllProperties response: {JsonSerializer.Serialize(properties)}");
             return properties;
         }
 
@@ -75,6 +82,7 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
                     .AsNoTracking()
                     .ToList();
 
+            Logger.Debug($"GetUserProperties response: {JsonSerializer.Serialize(userProperties)}");
             return userProperties;
         }
 
@@ -118,6 +126,8 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
                 }
             }
             context.SaveChanges();
+
+            Logger.Debug($"User with the username {userLogin} has properties updated: {JsonSerializer.Serialize(properties)}");
         }
 
         public IEnumerable<Permission> GetAllPermissions()
@@ -139,6 +149,7 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
             permissions.AddRange(itRoles);
             permissions.AddRange(requestRights);
 
+            Logger.Debug($"GetAllPermissions response: {JsonSerializer.Serialize(permissions)}");
             return permissions;
         }
 
@@ -148,7 +159,10 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
             using var context = new ConnectorDb();
 
             if (!IsUserExists(userLogin))
+            {
+                Logger.Error("User not found");
                 throw new ArgumentException("User not found");
+            }
 
             var userRequestRights = rightIds
                 .Select(rightId => new UserRequestRight()
@@ -159,6 +173,8 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
                 .ToList();
 
             context.UserRequestRights.AddRange(userRequestRights);
+
+            Logger.Debug($"User with the username {userLogin} has permissions added from the rights id: {JsonSerializer.Serialize(rightIds)}");
         }
 
         public void RemoveUserPermissions(string userLogin, IEnumerable<string> rightIds)
@@ -166,7 +182,10 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
             using var context = new ConnectorDb();
 
             if (!IsUserExists(userLogin))
+            {
+                Logger.Error("User not found");
                 throw new ArgumentException("User not found");
+            }
 
             var userRequestRights = rightIds
                 .Select(rightId => new UserRequestRight()
@@ -178,12 +197,12 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
 
             context.UserRequestRights.RemoveRange(userRequestRights);
             context.SaveChanges();
+
+            Logger.Debug($"User with the username {userLogin} has permissions removed from the rights id: {JsonSerializer.Serialize(rightIds)}");
         }
 
         public IEnumerable<string> GetUserPermissions(string userLogin)
         {
-            List<string> permissions = new List<string>();
-
             using var context = new ConnectorDb();
 
             var userPermissions = context.Users
@@ -195,6 +214,7 @@ namespace Avanpost.Interviews.Task.Integration.SandBox.Connector
             .AsNoTracking()
             .ToList();
 
+            Logger.Debug($"GetUserPermissions response: {JsonSerializer.Serialize(userPermissions)}");
             return userPermissions;
         }
         public ILogger Logger { get; set; }
